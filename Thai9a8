@@ -1,0 +1,313 @@
+local p = game.Players.LocalPlayer
+local ts = game:GetService("TweenService")
+local rs = game:GetService("RunService")
+local uis = game:GetService("UserInputService")
+local camera = workspace.CurrentCamera
+
+local gui = Instance.new("ScreenGui", p:WaitForChild("PlayerGui"))
+gui.Name, gui.ResetOnSpawn = "KING", false
+
+-- NÚT LOGO (CÓ THỂ DI CHUYỂN KÉO THẢ)
+local btn = Instance.new("ImageButton", gui)
+btn.Size, btn.Position, btn.BackgroundColor3, btn.Image = UDim2.new(0,52,0,52), UDim2.new(0.02,0,0.1,0), Color3.fromRGB(35,35,42), "rbxassetid://6023426915"
+Instance.new("UICorner", btn).CornerRadius = UDim.new(1,0)
+local s1 = Instance.new("UIStroke", btn) s1.Color, s1.Thickness = Color3.fromRGB(255,204,0), 2.5
+
+-- Code kéo thả nút Logo
+local dragging, dragInput, dragStart, startPos
+btn.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = btn.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+btn.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+uis.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- BẢNG MENU CHÍNH
+local f = Instance.new("Frame", gui)
+f.Size, f.Position, f.BackgroundColor3, f.Visible, f.Active, f.Draggable = UDim2.new(0,270,0,240), UDim2.new(0.02,0,0.2,0), Color3.fromRGB(20,20,25), false, true, true
+Instance.new("UICorner", f).CornerRadius = UDim.new(0,16)
+local fst = Instance.new("UIStroke", f) fst.Color, fst.Thickness = Color3.fromRGB(70,70,90), 2
+
+local t = Instance.new("TextLabel", f)
+t.Size, t.BackgroundTransparency, t.Text, t.TextColor3, t.TextSize, t.Font = UDim2.new(1,0,0,40), true, "KINGNGOCTHAI156", Color3.fromRGB(255,215,0), 17, Enum.Font.GothamBold
+
+local function mkBox(y)
+	local b = Instance.new("TextBox", f)
+	b.Size, b.Position, b.BackgroundColor3, b.TextColor3, b.Font = UDim2.new(0.88,0,0,32), UDim2.new(0.06,0,y,0), Color3.fromRGB(30,30,38), Color3.fromRGB(255,255,255), Enum.Font.Gotham
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+	local st = Instance.new("UIStroke", b) st.Color, st.Thickness = Color3.fromRGB(80,80,110), 1.2
+	return b
+end
+
+local function mkBtn(text, y)
+	local b = Instance.new("TextButton", f)
+	b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font = UDim2.new(0.88,0,0,32), UDim2.new(0.06,0,y,0), Color3.fromRGB(220,60,60), text, Color3.fromRGB(255,255,255), Enum.Font.GothamBold
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+	return b
+end
+
+local box = mkBox(0.20) box.Text, box.PlaceholderText = "32", "Speed..."
+local sBtn = mkBtn("SPEED: OFF", 0.38)
+local espBtn = mkBtn("ESP PLAYER: OFF", 0.56)
+local hpBtn = mkBtn("RPG STATS: OFF", 0.74)
+
+-- Đóng mở Menu khi bấm Logo
+local open = false
+btn.MouseButton1Click:Connect(function()
+	if not dragging then
+		open = not open
+		f.Visible = open
+		ts:Create(btn, TweenInfo.new(0.2), {Rotation = open and 15 or 0}):Play()
+	end
+end)
+
+-- SPEED
+local sOn, speed = false, 32
+local function getH()
+	local c = p.Character or p.CharacterAdded:Wait()
+	return c:WaitForChild("Humanoid")
+end
+
+box.FocusLost:Connect(function()
+	speed = tonumber(box.Text) or speed
+	box.Text = tostring(speed)
+	if sOn then getH().WalkSpeed = speed end
+end)
+
+sBtn.MouseButton1Click:Connect(function()
+	sOn = not sOn
+	getH().WalkSpeed = sOn and speed or 16
+	sBtn.Text = sOn and "SPEED: ON" or "SPEED: OFF"
+	sBtn.BackgroundColor3 = sOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+end)
+
+p.CharacterAdded:Connect(function() if sOn then getH().WalkSpeed = speed end end)
+
+-- ESP HIGHLIGHT
+local espOn = false
+local function updateESP()
+	for _, v in pairs(game.Players:GetPlayers()) do
+		if v ~= p and v.Character then
+			local hl = v.Character:FindFirstChild("KingESP")
+			if espOn then
+				if not hl then
+					hl = Instance.new("Highlight")
+					hl.Name = "KingESP"
+					hl.FillColor = Color3.fromRGB(255, 0, 0)
+					hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+					hl.FillTransparency = 0.5
+					hl.OutlineTransparency = 0
+					hl.Parent = v.Character
+				end
+			else
+				if hl then hl:Destroy() end
+			end
+		end
+	end
+end
+
+espBtn.MouseButton1Click:Connect(function()
+	espOn = not espOn
+	espBtn.Text = espOn and "ESP PLAYER: ON" or "ESP PLAYER: OFF"
+	espBtn.BackgroundColor3 = espOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+	updateESP()
+end)
+
+-- RPG STATS ESP (TỐI ƯU TÌM KIẾM MÁU ĐA TẦNG)
+local hpOn = false
+local hpStore = {}
+
+local function createHPUI(v)
+	if hpStore[v] then return hpStore[v] end
+
+	local holder = Instance.new("Frame", gui)
+	holder.Size = UDim2.new(0, 110, 0, 35)
+	holder.BackgroundTransparency = 1
+	holder.Visible = false
+
+	local nameTxt = Instance.new("TextLabel", holder)
+	nameTxt.Size = UDim2.new(1, 0, 0, 12)
+	nameTxt.BackgroundTransparency = 1
+	nameTxt.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nameTxt.TextStrokeTransparency = 0.2
+	nameTxt.Font = Enum.Font.GothamBold
+	nameTxt.TextSize = 10
+
+	local hpBarBg = Instance.new("Frame", holder)
+	hpBarBg.Size = UDim2.new(1, 0, 0, 6)
+	hpBarBg.Position = UDim2.new(0, 0, 0, 13)
+	hpBarBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	hpBarBg.BorderSizePixel = 0
+	Instance.new("UICorner", hpBarBg).CornerRadius = UDim.new(0, 3)
+
+	local hpFill = Instance.new("Frame", hpBarBg)
+	hpFill.Size = UDim2.new(1, 0, 1, 0)
+	hpFill.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+	hpFill.BorderSizePixel = 0
+	Instance.new("UICorner", hpFill).CornerRadius = UDim.new(0, 3)
+
+	local enBarBg = Instance.new("Frame", holder)
+	enBarBg.Size = UDim2.new(1, 0, 0, 4)
+	enBarBg.Position = UDim2.new(0, 0, 0, 21)
+	enBarBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	enBarBg.BorderSizePixel = 0
+	Instance.new("UICorner", enBarBg).CornerRadius = UDim.new(0, 2)
+
+	local enFill = Instance.new("Frame", enBarBg)
+	enFill.Size = UDim2.new(1, 0, 1, 0)
+	enFill.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+	enFill.BorderSizePixel = 0
+	Instance.new("UICorner", enFill).CornerRadius = UDim.new(0, 2)
+
+	local statTxt = Instance.new("TextLabel", holder)
+	statTxt.Size = UDim2.new(1, 0, 0, 10)
+	statTxt.Position = UDim2.new(0, 0, 0, 26)
+	statTxt.BackgroundTransparency = 1
+	statTxt.TextColor3 = Color3.fromRGB(200, 200, 200)
+	statTxt.TextStrokeTransparency = 0.4
+	statTxt.Font = Enum.Font.Gotham
+	statTxt.TextSize = 8
+
+	local data = {Holder = holder, NameTxt = nameTxt, HPFill = hpFill, ENFill = enFill, StatTxt = statTxt}
+	hpStore[v] = data
+	return data
+end
+
+local function removeHPUI(v)
+	if hpStore[v] then
+		hpStore[v].Holder:Destroy()
+		hpStore[v] = nil
+	end
+end
+
+hpBtn.MouseButton1Click:Connect(function()
+	hpOn = not hpOn
+	hpBtn.Text = hpOn and "RPG STATS: ON" or "RPG STATS: OFF"
+	hpBtn.BackgroundColor3 = hpOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+	if not hpOn then
+		for _, v in pairs(game.Players:GetPlayers()) do
+			removeHPUI(v)
+		end
+	end
+end)
+
+-- Hàm tìm kiếm máu chính xác ở cả Character lẫn Player thư mục dữ liệu
+local function getHealthData(v, char)
+	local hp, maxHp = 100, 100
+	
+	-- 1. Tìm trong Humanoid chuẩn trước
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hp = hum.Health
+		maxHp = hum.MaxHealth
+	end
+	
+	-- 2. Nếu Humanoid không đổi hoặc bị khóa cứng, tìm trong các thư mục chỉ số RPG tùy chỉnh
+	local folders = {
+		char:FindFirstChild("Stats"), char:FindFirstChild("Data"), char:FindFirstChild("leaderstats"),
+		v:FindFirstChild("Stats"), v:FindFirstChild("Data"), v:FindFirstChild("leaderstats")
+	}
+	
+	for _, folder in ipairs(folders) do
+		if folder then
+			local hpStat = folder:FindFirstChild("Health") or folder:FindFirstChild("HP") or folder:FindFirstChild("CurrentHealth")
+			local maxHpStat = folder:FindFirstChild("MaxHealth") or folder:FindFirstChild("MaxHP")
+			
+			if hpStat and (hpStat:IsA("NumberValue") or hpStat:IsA("IntValue")) then
+				hp = hpStat.Value
+			end
+			if maxHpStat and (maxHpStat:IsA("NumberValue") or maxHpStat:IsA("IntValue")) then
+				maxHp = maxHpStat.Value
+			end
+		end
+	end
+	
+	if maxHp <= 0 then maxHp = 100 end
+	return math.max(0, math.floor(hp)), math.floor(maxHp)
+end
+
+rs.RenderStepped:Connect(function()
+	if espOn then updateESP() end
+	if not hpOn then return end
+
+	for _, v in pairs(game.Players:GetPlayers()) do
+		if v ~= p and v.Character then
+			local char = v.Character
+			local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+			local hum = char:FindFirstChildOfClass("Humanoid")
+
+			if head and (not hum or hum.Health > -999) then
+				local ui = createHPUI(v)
+				ui.Holder.Visible = true
+
+				local vector, onScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 2.5, 0))
+				if onScreen then
+					ui.Holder.Position = UDim2.new(0, vector.X - 55, 0, vector.Y - 18)
+					
+					local hp, maxHp = getHealthData(v, char)
+					local hpRatio = math.clamp(hp / maxHp, 0, 1)
+
+					ui.HPFill.Size = UDim2.new(hpRatio, 0, 1, 0)
+
+					local hpColor = Color3.fromRGB(46, 204, 113)
+					if hpRatio <= 0.25 then
+						hpColor = Color3.fromRGB(231, 76, 60)
+					elseif hpRatio <= 0.5 then
+						hpColor = Color3.fromRGB(241, 196, 15)
+					end
+					ui.HPFill.BackgroundColor3 = hpColor
+
+					-- Lấy năng lượng (Energy / Mana)
+					local currentEnergy, maxEnergy = 100, 100
+					local statsFolder = char:FindFirstChild("Stats") or char:FindFirstChild("Data") or v:FindFirstChild("Data") or v:FindFirstChild("leaderstats")
+					local enStat = char:FindFirstChild("Energy") or char:FindFirstChild("Mana") or char:FindFirstChild("Chi") or char:FindFirstChild("Power")
+					if not enStat and statsFolder then
+						enStat = statsFolder:FindFirstChild("Energy") or statsFolder:FindFirstChild("Mana") or statsFolder:FindFirstChild("Chi") or statsFolder:FindFirstChild("Power")
+					end
+
+					if enStat and (enStat:IsA("NumberValue") or enStat:IsA("IntValue")) then
+						currentEnergy = enStat.Value
+						local maxEnStat = statsFolder and (statsFolder:FindFirstChild("Max"..enStat.Name) or statsFolder:FindFirstChild("MaxEnergy") or statsFolder:FindFirstChild("MaxMana"))
+						if maxEnStat then maxEnergy = maxEnStat.Value else maxEnergy = math.max(currentEnergy, 100) end
+					end
+
+					local enRatio = math.clamp(currentEnergy / maxEnergy, 0, 1)
+					ui.ENFill.Size = UDim2.new(enRatio, 0, 1, 0)
+
+					local dist = 0
+					if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+						dist = math.floor((p.Character.HumanoidRootPart.Position - head.Position).Magnitude)
+					end
+
+					ui.NameTxt.Text = v.Name .. " [" .. dist .. "m]"
+					ui.StatTxt.Text = "HP: " .. hp .. " | EN: " .. math.floor(currentEnergy)
+				else
+					ui.Holder.Visible = false
+				end
+			else
+				removeHPUI(v)
+			end
+		else
+			removeHPUI(v)
+		end
+	end
+end)
