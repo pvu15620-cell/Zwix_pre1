@@ -1,0 +1,247 @@
+local p, ts, rs, uis, camera = game.Players.LocalPlayer, game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService"), workspace.CurrentCamera
+local gui = Instance.new("ScreenGui", p:WaitForChild("PlayerGui")) gui.Name, gui.ResetOnSpawn = "KING", false
+
+local function mk(cls, parent, props)
+	local inst = Instance.new(cls)
+	for k, v in pairs(props or {}) do inst[k] = v end
+	inst.Parent = parent
+	return inst
+end
+
+-- Nút mở/đóng menu nổi
+local btn = mk("ImageButton", gui, {Size = UDim2.new(0,52,0,52), Position = UDim2.new(0.02,0,0.1,0), BackgroundColor3 = Color3.fromRGB(20,20,25), Image = "rbxassetid://6023426915"})
+mk("UICorner", btn, {CornerRadius = UDim.new(1,0)}) mk("UIStroke", btn, {Color = Color3.fromRGB(220,40,40), Thickness = 2})
+
+local dragging, dragInput, dragStart, startPos
+btn.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+		dragging, dragStart, startPos = true, i.Position, btn.Position
+		i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then dragging = false end end)
+	end
+end)
+btn.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then dragInput = i end end)
+uis.InputChanged:Connect(function(i)
+	if i == dragInput and dragging then
+		local d = i.Position - dragStart
+		btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+	end
+end)
+
+-- Khung Menu chính phong cách hiện đại
+local mainFrame = mk("Frame", gui, {Size = UDim2.new(0,550,0,380), Position = UDim2.new(0.5,-275,0.5,-190), BackgroundColor3 = Color3.fromRGB(15,15,18), Visible = false, Active = true, Draggable = true})
+mk("UICorner", mainFrame, {CornerRadius = UDim.new(0,14)}) 
+mk("UIStroke", mainFrame, {Color = Color3.fromRGB(220,40,40), Thickness = 1.5})
+
+-- Sidebar bên trái
+local sidebar = mk("Frame", mainFrame, {Size = UDim2.new(0,150,1,0), BackgroundColor3 = Color3.fromRGB(12,12,15), BorderSizePixel = 0})
+mk("UICorner", sidebar, {CornerRadius = UDim.new(0,14)})
+
+-- Logo cá nhân hóa thay thế
+local avatarImg = mk("ImageLabel", sidebar, {Size = UDim2.new(0,50,0,50), Position = UDim2.new(0.5,-25,0,15), BackgroundColor3 = Color3.fromRGB(30,30,40), Image = "rbxassetid://6023426915"})
+mk("UICorner", avatarImg, {CornerRadius = UDim.new(1,0)})
+mk("UIStroke", avatarImg, {Color = Color3.fromRGB(220,40,40), Thickness = 2})
+
+local logoText = mk("TextLabel", sidebar, {Size = UDim2.new(1,0,0,30), Position = UDim2.new(0,0,0,70), BackgroundTransparency = 1, Text = "NthaiSCR", TextColor3 = Color3.fromRGB(230,40,40), TextSize = 13, Font = Enum.Font.GothamBold})
+
+local function mkTab(name, y)
+	local b = mk("TextButton", sidebar, {Size = UDim2.new(0.85,0,0,35), Position = UDim2.new(0.075,0,y,0), BackgroundColor3 = Color3.fromRGB(220,40,40), Text = "   " .. name, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
+	mk("UICorner", b, {CornerRadius = UDim.new(0,8)})
+	return b
+end
+mkTab("MAIN", 0.32)
+
+local closeBtn = mk("TextButton", sidebar, {Size = UDim2.new(0.85,0,0,30), Position = UDim2.new(0.075,0,0.85,0), BackgroundColor3 = Color3.fromRGB(40,20,20), Text = "✕ CLOSE", TextColor3 = Color3.fromRGB(230,60,60), Font = Enum.Font.GothamBold, TextSize = 11})
+mk("UICorner", closeBtn, {CornerRadius = UDim.new(0,8)})
+closeBtn.MouseButton1Click:Connect(function() mainFrame.Visible = false end)
+
+-- Khu vực chứa nội dung bên phải (Container cuộn được)
+local contentContainer = mk("ScrollingFrame", mainFrame, {Size = UDim2.new(0,380,1,-20), Position = UDim2.new(0,160,0,10), BackgroundTransparency = 1, CanvasSize = UDim2.new(0,0,0,480), ScrollBarThickness = 3})
+
+local function mkCard(title, desc, yPos)
+	local card = mk("Frame", contentContainer, {Size = UDim2.new(1,-10,0,65), Position = UDim2.new(0,0,0,yPos), BackgroundColor3 = Color3.fromRGB(22,22,28)})
+	mk("UICorner", card, {CornerRadius = UDim.new(0,10)})
+	mk("UIStroke", card, {Color = Color3.fromRGB(45,45,55), Thickness = 1})
+	
+	mk("TextLabel", card, {Size = UDim2.new(0.6,0,0,22), Position = UDim2.new(0.05,0,0,10), BackgroundTransparency = 1, Text = title, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left})
+	mk("TextLabel", card, {Size = UDim2.new(0.6,0,0,20), Position = UDim2.new(0.05,0,0,32), BackgroundTransparency = 1, Text = desc, TextColor3 = Color3.fromRGB(150,150,150), Font = Enum.Font.Gotham, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left})
+	return card
+end
+
+-- 1. SPEED CARD
+local speedCard = mkCard("SPEED", "Tốc độ di chuyển nhân vật", 0)
+local sBtnState = mk("TextButton", speedCard, {Size = UDim2.new(0,60,0,28), Position = UDim2.new(0.79,0,0.5,-14), BackgroundColor3 = Color3.fromRGB(220,60,60), Text = "OFF", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 11})
+mk("UICorner", sBtnState, {CornerRadius = UDim.new(0,6)})
+
+local minusBtn = mk("TextButton", speedCard, {Size = UDim2.new(0,25,0,26), Position = UDim2.new(0.52,0,0.5,-13), BackgroundColor3 = Color3.fromRGB(40,40,50), Text = "-", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 12})
+mk("UICorner", minusBtn, {CornerRadius = UDim.new(0,6)})
+
+local box = mk("TextBox", speedCard, {Size = UDim2.new(0,40,0,26), Position = UDim2.new(0.62,0,0.5,-13), BackgroundColor3 = Color3.fromRGB(30,30,38), TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, Text = "32", TextSize = 11, ClearTextOnFocus = false})
+mk("UICorner", box, {CornerRadius = UDim.new(0,6)})
+
+local plusBtn = mk("TextButton", speedCard, {Size = UDim2.new(0,25,0,26), Position = UDim2.new(0.72,0,0.5,-13), BackgroundColor3 = Color3.fromRGB(40,40,50), Text = "+", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 12})
+mk("UICorner", plusBtn, {CornerRadius = UDim.new(0,6)})
+
+-- 2. ESP PLAYER CARD
+local espCard = mkCard("ESP PLAYER", "Hiển thị khung bao quanh người chơi", 75)
+local espBtnState = mk("TextButton", espCard, {Size = UDim2.new(0,60,0,28), Position = UDim2.new(0.79,0,0.5,-14), BackgroundColor3 = Color3.fromRGB(220,60,60), Text = "OFF", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 11})
+mk("UICorner", espBtnState, {CornerRadius = UDim.new(0,6)})
+
+-- 3. RPG STATS CARD
+local hpCard = mkCard("RPG STATS", "Hiển thị thanh máu và năng lượng", 150)
+local hpBtnState = mk("TextButton", hpCard, {Size = UDim2.new(0,60,0,28), Position = UDim2.new(0.79,0,0.5,-14), BackgroundColor3 = Color3.fromRGB(220,60,60), Text = "OFF", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 11})
+mk("UICorner", hpBtnState, {CornerRadius = UDim.new(0,6)})
+
+-- 4. CRYSTAL ESP CARD
+local crystalCard = mkCard("CRYSTAL ESP", "Định vị và làm sáng pha lê/khoáng sản", 225)
+local crystalBtnState = mk("TextButton", crystalCard, {Size = UDim2.new(0,60,0,28), Position = UDim2.new(0.79,0,0.5,-14), BackgroundColor3 = Color3.fromRGB(220,60,60), Text = "OFF", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 11})
+mk("UICorner", crystalBtnState, {CornerRadius = UDim.new(0,6)})
+
+local open = false
+btn.MouseButton1Click:Connect(function()
+	if not dragging then open = not open; mainFrame.Visible = open; ts:Create(btn, TweenInfo.new(0.2), {Rotation = open and 15 or 0}):Play() end
+end)
+
+-- LOGIC CHỨC NĂNG GỐC GIỮ NGUYÊN 100%
+
+-- SPEED LOGIC
+local sOn, speed = false, 32
+local function getH() return (p.Character or p.CharacterAdded:Wait()):WaitForChild("Humanoid") end
+box.FocusLost:Connect(function() speed = tonumber(box.Text) or speed; box.Text = tostring(speed); if sOn then getH().WalkSpeed = speed end end)
+plusBtn.MouseButton1Click:Connect(function() speed = speed + 2; box.Text = tostring(speed); if sOn then getH().WalkSpeed = speed end end)
+minusBtn.MouseButton1Click:Connect(function() speed = math.max(16, speed - 2); box.Text = tostring(speed); if sOn then getH().WalkSpeed = speed end end)
+
+sBtnState.MouseButton1Click:Connect(function()
+	sOn = not sOn; getH().WalkSpeed = sOn and speed or 16
+	sBtnState.Text, sBtnState.BackgroundColor3 = sOn and "ON" or "OFF", sOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+end)
+p.CharacterAdded:Connect(function() if sOn then getH().WalkSpeed = speed end end)
+
+-- ESP PLAYER LOGIC
+local espOn = false
+local function updateESP()
+	for _, v in pairs(game.Players:GetPlayers()) do
+		if v ~= p and v.Character then
+			local hl = v.Character:FindFirstChild("KingESP")
+			if espOn and not hl then mk("Highlight", v.Character, {Name = "KingESP", FillColor = Color3.fromRGB(255,0,0), OutlineColor = Color3.new(1,1,1), FillTransparency = 0.5})
+			elseif not espOn and hl then hl:Destroy() end
+		end
+	end
+end
+espBtnState.MouseButton1Click:Connect(function()
+	espOn = not espOn; espBtnState.Text, espBtnState.BackgroundColor3 = espOn and "ON" or "OFF", espOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60); updateESP()
+end)
+
+-- RPG STATS LOGIC
+local hpOn, hpStore = false, {}
+local function createHPUI(v)
+	if hpStore[v] then return hpStore[v] end
+	local holder = mk("Frame", gui, {Size = UDim2.new(0,110,0,35), BackgroundTransparency = 1, Visible = false})
+	local nameTxt = mk("TextLabel", holder, {Size = UDim2.new(1,0,0,12), BackgroundTransparency = 1, TextColor3 = Color3.new(1,1,1), TextStrokeTransparency = 0.2, Font = Enum.Font.GothamBold, TextSize = 10})
+	local function mkBar(y, h, col)
+		local bg = mk("Frame", holder, {Size = UDim2.new(1,0,0,h), Position = UDim2.new(0,0,0,y), BackgroundColor3 = Color3.fromRGB(20,20,20), BorderSizePixel = 0})
+		mk("UICorner", bg, {CornerRadius = UDim.new(0,3)})
+		local fill = mk("Frame", bg, {Size = UDim2.new(1,0,1,0), BackgroundColor3 = col, BorderSizePixel = 0})
+		mk("UICorner", fill, {CornerRadius = UDim.new(0,3)})
+		return fill
+	end
+	local hpFill, enFill = mkBar(13, 6, Color3.fromRGB(46,204,113)), mkBar(21, 4, Color3.fromRGB(52,152,219))
+	local statTxt = mk("TextLabel", holder, {Size = UDim2.new(1,0,0,10), Position = UDim2.new(0,0,0,26), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(200,200,200), TextStrokeTransparency = 0.4, Font = Enum.Font.Gotham, TextSize = 8})
+	hpStore[v] = {Holder = holder, NameTxt = nameTxt, HPFill = hpFill, ENFill = enFill, StatTxt = statTxt}
+	return hpStore[v]
+end
+local function removeHPUI(v) if hpStore[v] then hpStore[v].Holder:Destroy(); hpStore[v] = nil end end
+
+hpBtnState.MouseButton1Click:Connect(function()
+	hpOn = not hpOn; hpBtnState.Text, hpBtnState.BackgroundColor3 = hpOn and "ON" or "OFF", hpOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+	if not hpOn then for _, v in pairs(game.Players:GetPlayers()) do removeHPUI(v) end end
+end)
+
+-- CRYSTAL ESP LOGIC
+local function isCrystal(obj)
+	local name = string.lower(obj.Name)
+	local keywords = {"crystal", "pha le", "phale", "gem", "shard", "diamond", "ruby"}
+	for _, k in ipairs(keywords) do if string.find(name, k) then return true end end
+	return false
+end
+
+local crystalEspOn = false
+local function clearCrystalESP()
+	for _, v in pairs(workspace:GetDescendants()) do if v:IsA("Highlight") and v.Name == "CrystalHighlight" then v:Destroy() end end
+end
+
+local function applyCrystalESP(target)
+	if target:IsA("BasePart") and target.Size.Magnitude < 40 and not target:FindFirstChild("CrystalHighlight") then
+		mk("Highlight", target, {Name = "CrystalHighlight", FillColor = Color3.fromRGB(0,255,255), OutlineColor = Color3.new(1,1,1), FillTransparency = 0.3, DepthMode = Enum.HighlightDepthMode.AlwaysOnTop})
+	end
+end
+
+local function scanCrystals()
+	clearCrystalESP()
+	if not crystalEspOn then return end
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if (obj:IsA("BasePart") or obj:IsA("Model")) and isCrystal(obj) then
+			if obj:IsA("BasePart") then applyCrystalESP(obj)
+			elseif obj:IsA("Model") then
+				for _, part in pairs(obj:GetDescendants()) do if part:IsA("BasePart") then applyCrystalESP(part) end end
+			end
+		end
+	end
+end
+
+crystalBtnState.MouseButton1Click:Connect(function()
+	crystalEspOn = not crystalEspOn
+	crystalBtnState.Text = crystalEspOn and "ON" or "OFF"
+	crystalBtnState.BackgroundColor3 = crystalEspOn and Color3.fromRGB(46,204,113) or Color3.fromRGB(220,60,60)
+	scanCrystals()
+end)
+
+workspace.DescendantAdded:Connect(function(obj)
+	if crystalEspOn and (obj:IsA("BasePart") or obj:IsA("Model")) and isCrystal(obj) then
+		if obj:IsA("BasePart") then applyCrystalESP(obj)
+		elseif obj:IsA("Model") then
+			for _, part in pairs(obj:GetDescendants()) do if part:IsA("BasePart") then applyCrystalESP(part) end end
+		end
+	end
+end)
+
+task.spawn(function() while true do task.wait(3) if crystalEspOn then scanCrystals() end end end)
+
+-- RENDER LOOP
+rs.RenderStepped:Connect(function()
+	if espOn then updateESP() end
+	if not hpOn then return end
+	for _, v in pairs(game.Players:GetPlayers()) do
+		if v ~= p and v.Character then
+			local char, hum = v.Character, v.Character:FindFirstChildOfClass("Humanoid")
+			local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+			if head and hum and hum.Health > 0 then
+				local ui = createHPUI(v)
+				local vector, onScreen = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 2.5, 0))
+				if onScreen then
+					ui.Holder.Visible, ui.Holder.Position = true, UDim2.new(0, vector.X - 55, 0, vector.Y - 18)
+					
+					local hp, maxHp = math.max(0, hum.Health), hum.MaxHealth
+					if maxHp <= 0 then maxHp = 100 end
+					local hpRatio = math.clamp(hp / maxHp, 0, 1)
+					ui.HPFill.Size = UDim2.new(hpRatio, 0, 1, 0)
+					ui.HPFill.BackgroundColor3 = hpRatio <= 0.25 and Color3.fromRGB(231,76,60) or (hpRatio <= 0.5 and Color3.fromRGB(241,196,15) or Color3.fromRGB(46,204,113))
+
+					local stats = char:FindFirstChild("Stats") or char:FindFirstChild("Data") or v:FindFirstChild("Data") or v:FindFirstChild("leaderstats")
+					local enStat = char:FindFirstChild("Energy") or (stats and stats:FindFirstChild("Energy"))
+					local curEn = enStat and enStat.Value or 100
+					ui.ENFill.Size = UDim2.new(math.clamp(curEn / 100, 0, 1), 0, 1, 0)
+
+					local dist = p.Character and p.Character:FindFirstChild("HumanoidRootPart") and math.floor((p.Character.HumanoidRootPart.Position - head.Position).Magnitude) or 0
+					ui.NameTxt.Text = v.Name .. " [" .. dist .. "m]"
+					ui.StatTxt.Text = "HP: " .. math.floor(hp) .. "/" .. math.floor(maxHp) .. " | EN: " .. math.floor(curEn)
+				else 
+					ui.Holder.Visible = false 
+				end
+			else 
+				removeHPUI(v) 
+			end
+		else 
+			removeHPUI(v) 
+		end
+	end
+end)
